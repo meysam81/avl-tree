@@ -1,6 +1,7 @@
 package avltree;
 import java.lang.StringBuilder;
 import java.lang.Math;
+import java.util.ArrayList;
 
 public class AvlTree<T extends Comparable<? super T>> {
 	public static class AvlNode<T> {
@@ -56,7 +57,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 			3) Re-balance the tree by performing appropriate rotations on the 
 					subtree rooted with z. There can be 4 possible cases that needs to be
 					handled as x, y and z can be arranged in 4 ways. Following are the possible 4 arrangements:
-				
+
 				a) y is left child of z and x is left child of y (Left Left Case)
 					T1, T2, T3 and T4 are subtrees.
 				         z                                      y 
@@ -66,8 +67,8 @@ public class AvlTree<T extends Comparable<? super T>> {
 				     x   T3                               T1  T2  T3  T4
 				    / \
 				  T1   T2
-				
-				
+
+
 				b) y is left child of z and x is right child of y (Left Right Case)
 					     z                               z                           x
 					    / \                            /   \                        /  \ 
@@ -76,7 +77,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 					T1   x                          y    T3                    T1  T2 T3  T4
 					    / \                        / \
 					  T2   T3                    T1   T2
-				
+
 				c) y is right child of z and x is right child of y (Right Right Case)
 					  z                                y
 					 /  \                            /   \ 
@@ -85,7 +86,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 					   T2   x                     T1  T2 T3  T4
 					       / \
 					     T3  T4
-				
+
 				d) y is right child of z and x is left child of y (Right Left Case)
 					   z                            z                            x
 					  / \                          / \                          /  \ 
@@ -94,7 +95,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 					   x   T4                      T2   y                  T1  T2  T3  T4
 					  / \                              /  \
 					T2   T3                           T3   T4
-				
+
 		 */
 		if (z == null)
 			z = new AvlNode<T> (w);
@@ -132,31 +133,31 @@ public class AvlTree<T extends Comparable<? super T>> {
 		z.height = Math.max (getNodeHeight (z.leftChild), getNodeHeight (z.rightChild)) + 1;
 		return z; // z is the root node obviously
 	}
-	private AvlNode<T> rotateWithLeftChild (AvlNode<T> node1){
-		AvlNode<T> node2 = node1.leftChild;
+	private AvlNode<T> rotateWithLeftChild (AvlNode<T> father){
+		AvlNode<T> lChild = father.leftChild;
 
-		node1.leftChild = node2.rightChild;
-		node2.rightChild = node1;
+		father.leftChild = lChild.rightChild;
+		lChild.rightChild = father;
 
-		node1.height = Math.max (getNodeHeight (node1.leftChild), getNodeHeight (node1.rightChild)) + 1;
-		node2.height = Math.max (getNodeHeight (node2.leftChild), node1.height) + 1;
+		father.height = Math.max (getNodeHeight (father.leftChild), getNodeHeight (father.rightChild)) + 1;
+		lChild.height = Math.max (getNodeHeight (lChild.leftChild), getNodeHeight(father)) + 1;
 
-		return (node2);
+		return (lChild);
 	}
 	private AvlNode<T> doubleWithLeftChild (AvlNode<T> node){
 		node.leftChild = rotateWithRightChild (node.leftChild);
 		return rotateWithLeftChild (node);
 	}
-	private AvlNode<T> rotateWithRightChild (AvlNode<T> node1){
-		AvlNode<T> node2 = node1.rightChild;
+	private AvlNode<T> rotateWithRightChild (AvlNode<T> father){
+		AvlNode<T> rChild = father.rightChild;
 
-		node1.rightChild = node2.leftChild;
-		node2.leftChild = node1;
+		father.rightChild = rChild.leftChild;
+		rChild.leftChild = father;
 
-		node1.height = Math.max (getNodeHeight (node1.leftChild), getNodeHeight (node1.rightChild)) + 1;
-		node2.height = Math.max (getNodeHeight (node2.rightChild), node1.height) + 1;
+		father.height = Math.max (getNodeHeight (father.leftChild), getNodeHeight (father.rightChild)) + 1;
+		rChild.height = Math.max (getNodeHeight (rChild.rightChild), getNodeHeight(father)) + 1;
 
-		return (node2);
+		return (rChild);
 	}
 	private AvlNode<T> doubleWithRightChild (AvlNode<T> node){
 		node.rightChild = rotateWithLeftChild (node.rightChild);
@@ -226,9 +227,29 @@ public class AvlTree<T extends Comparable<? super T>> {
 	public void remove( T node ) {
 		root = remove(node, root);
 	}
+	private int getBalance(AvlNode<T> node)
+	{
+		if (node == null)
+			return 0;
+		return getNodeHeight(node.leftChild) - getNodeHeight(node.rightChild);
+	}
 	private AvlNode<T> remove(T w, AvlNode<T> z) {
 		// deletion algorithm:  (reference: geeksforgeeks.org)
 		/*
+
+		    T1, T2 and T3 are subtrees of the tree rooted with y (on left side)
+				or x (on right side)
+                y                               x
+               / \     Right Rotation          /  \
+              x   T3   – - – - – - – >        T1   y
+             / \       < - - - - - - -            / \
+            T1  T2     Left Rotation            T2  T3
+			Keys in both of the above trees follow the following order
+			      keys(T1) < key(x) < keys(T2) < key(y) < keys(T3)
+			So BST property is not violated anywhere.
+
+
+
 		    Let w be the node to be deleted
 			1) Perform standard BST delete for w.
 			2) Starting from w, travel up and find the first unbalanced node. 
@@ -238,7 +259,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 			3) Re-balance the tree by performing appropriate rotations on the subtree rooted with z.
 					There can be 4 possible cases that needs to be handled as x, y and z
 					can be arranged in 4 ways. Following are the possible 4 arrangements:
-				
+
 				a) y is left child of z and x is left child of y (Left Left Case)
 					T1, T2, T3 and T4 are subtrees.
 				         z                                      y 
@@ -248,7 +269,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 				     x   T3                               T1  T2  T3  T4
 				    / \
 				  T1   T2
-				
+
 				b) y is left child of z and x is right child of y (Left Right Case)
 					     z                               z                           x
 					    / \                            /   \                        /  \ 
@@ -257,7 +278,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 					T1   x                          y    T3                    T1  T2 T3  T4
 					    / \                        / \
 					  T2   T3                    T1   T2
-				
+
 				c) y is right child of z and x is right child of y (Right Right Case)
 					  z                                y
 					 /  \                            /   \ 
@@ -266,7 +287,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 					   T2   x                     T1  T2 T3  T4
 					       / \
 					     T3  T4
-				
+
 				d) y is right child of z and x is left child of y (Right Left Case)
 					   z                            z                            x
 					  / \                          / \                          /  \ 
@@ -275,61 +296,56 @@ public class AvlTree<T extends Comparable<? super T>> {
 					   x   T4                      T2   y                  T1  T2  T3  T4
 					  / \                              /  \
 					T2   T3                           T3   T4
-				
+
 		 */
-		if (z==null)    {
-			System.out.println("No such value found in the tree.");
+		if (z == null)
+		{
+			System.out.println("No such value found.");
+			return z;
+		}
+		else if(w.compareTo(z.value) < 0) // search key on the left subtree
+			z.leftChild = remove(w, z.leftChild);
+		else if(w.compareTo(z.value) > 0) // search key on the right subtree
+			z.rightChild = remove(w, z.rightChild);
+
+		else { // the key is found!
+
+			// delete node
+			if (z.rightChild == null || z.leftChild == null) {
+				z = z.rightChild == null ? z.leftChild : z.rightChild;
+				numberOfNodes--;
+			}
+			else
+			{
+				z.value = minValue(z.rightChild).value;
+				z.rightChild = remove(z.value, z.rightChild);
+			}
+			
+		}
+		
+		if (z == null)
 			return null;
+		
+		z.height = Math.max(getNodeHeight(z.leftChild), getNodeHeight(z.rightChild)) + 1;
+		if (getBalance(z) > 1)
+		{
+			if (getBalance(z.leftChild) >= 0)
+				return rotateWithLeftChild(z); // left left case
+			else // if (getBalance(z.leftChild) < 0)
+				return doubleWithLeftChild(z); // left right case
 		}
-		if (w.compareTo(z.value) < 0 ) {
-			z.leftChild = remove(w,z.leftChild);
-			int l = z.leftChild != null ? z.leftChild.height : 0;
 
-			if((z.rightChild != null) && (z.rightChild.height - l >= 2)) {
-				int rightHeight = z.rightChild.rightChild != null ? z.rightChild.rightChild.height : 0;
-				int leftHeight = z.rightChild.leftChild != null ? z.rightChild.leftChild.height : 0;
-
-				if(rightHeight >= leftHeight)
-					z = rotateWithLeftChild(z); // left left case            
-				else
-					z = doubleWithRightChild(z); // left right case
-			}
+		else if(getBalance(z) < -1)
+		{
+			if (getBalance(z.rightChild) <= 0)
+				return rotateWithRightChild(z); // right right case
+			else // if (getBalance(z.rightChild) > 0)
+				return doubleWithRightChild(z); // right left case
 		}
-		else if (w.compareTo(z.value) > 0) {
-			z.rightChild = remove(w,z.rightChild);
-			int r = z.rightChild != null ? z.rightChild.height : 0;
-			if((z.leftChild != null) && (z.leftChild.height - r >= 2)) {
-				int leftHeight = z.leftChild.leftChild != null ? z.leftChild.leftChild.height : 0;
-				int rightHeight = z.leftChild.rightChild != null ? z.leftChild.rightChild.height : 0;
-				if(leftHeight >= rightHeight)
-					z = rotateWithRightChild(z); // right right case                
-				else
-					z = doubleWithLeftChild(z); // right left case
-			}
-		}
-		else if(z.leftChild != null) { // w.compareTo(z.value) == 0
-			z.value = maxValue(z.leftChild).value;
-			remove(z.value, z.leftChild);
 
-			if((z.rightChild != null) && (z.rightChild.height - z.leftChild.height >= 2)) {
-				int rightHeight = z.rightChild.rightChild != null ? z.rightChild.rightChild.height : 0;
-				int leftHeight = z.rightChild.leftChild != null ? z.rightChild.leftChild.height : 0;
 
-				if(rightHeight >= leftHeight)
-					z = rotateWithLeftChild(z);            
-				else
-					z = doubleWithRightChild(z);
-			}
-		}
-		else // w.compareTo(z.value) > 0 && z.leftChild == null
-			z = (z.leftChild != null) ? z.leftChild : z.rightChild;
-
-		if(z != null) {
-			int leftHeight = z.leftChild != null ? z.leftChild.height : 0;
-			int rightHeight = z.rightChild!= null ? z.rightChild.height : 0;
-			z.height = Math.max(leftHeight,rightHeight) + 1;
-		}
 		return z;
+
 	}
 	public boolean contains(T x){
 		return contains(x, root); 
@@ -391,7 +407,35 @@ public class AvlTree<T extends Comparable<? super T>> {
 
 		return true;
 	}
+	public boolean search(T x)
+	{
+		if (!contains(x))
+			return false;
 
+		ArrayList<T> elements = new ArrayList<T>();
+		while (true) { // remove every node
+			if (root != null)
+			{
+				elements.add(root.value);
+				remove(root.value);
+			}
+			else
+				break;
+		}
+		if (root != null)
+			remove(root.value);
+		if (numberOfNodes == 0)
+		{
+			insert(x);
+			for (T elem : elements)
+				insert(elem);
+			return true;
+		}
+		else
+			System.out.println("number of nodes before recreation of the tree: " + numberOfNodes);
+		return false;
+
+	}
 
 	public static void main (String[] args) {
 		AvlTree<Integer> t = new AvlTree<Integer>();
@@ -410,6 +454,15 @@ public class AvlTree<T extends Comparable<? super T>> {
 
 		System.out.println ("Prefix Traversal:");
 		System.out.println(t.prefixNotation());
+
+		t.search(5);
+
+		System.out.println ("Infix Traversal after search(5):");
+		System.out.println(t.infixNotation());
+
+		System.out.println ("Prefix Traversal after search(5):");
+		System.out.println(t.prefixNotation());
+
 
 	}
 }
