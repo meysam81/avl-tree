@@ -22,15 +22,9 @@ public class AvlTree<T extends Comparable<? super T>> {
 	private AvlNode<T> root;
 	private int numberOfNodes;
 
-	// to achieve balanced tree
-	private int numberOfSingleRotations;
-	private int numberOfDoubleRotations;
-
 	public AvlTree (){
 		root = null;        
 		numberOfNodes = 0;
-		numberOfSingleRotations = 0;
-		numberOfDoubleRotations = 0;    
 	}
 	public int getNodeHeight (AvlNode<T> node){
 		return node == null ? -1 : node.height;
@@ -102,28 +96,24 @@ public class AvlTree<T extends Comparable<? super T>> {
 		else if (w.compareTo (z.value) < 0){
 			z.leftChild = insert (w, z.leftChild);
 
-			if (getNodeHeight (z.leftChild) - getNodeHeight (z.rightChild) == 2){ // a or b
+			if (getBalance(z) == 2){ // a or b
 				if (w.compareTo (z.leftChild.value) < 0){ // a: left left case
 					z = rotateWithLeftChild (z);
-					numberOfSingleRotations++;
 				}
 				else { // left right case
-					z = doubleWithLeftChild (z);
-					numberOfDoubleRotations++;
+					z = rotateWithRightThenLeft (z);
 				}
 			}
 		}
 		else if (w.compareTo (z.value) > 0){ // c or d
 			z.rightChild = insert (w, z.rightChild);
 
-			if ( getNodeHeight (z.rightChild) - getNodeHeight (z.leftChild) == 2)
+			if ( getBalance(z) == -2)
 				if (w.compareTo (z.rightChild.value) > 0){ // right right case
-					z = rotateWithRightChild (z);
-					numberOfSingleRotations++;
+					z = rotateWithRight (z);
 				}
 				else{ // right left case
-					z = doubleWithRightChild (z);
-					numberOfDoubleRotations++;
+					z = rotateWithLeftThenRight (z);
 				}
 		}
 		else {
@@ -144,11 +134,11 @@ public class AvlTree<T extends Comparable<? super T>> {
 
 		return (lChild);
 	}
-	private AvlNode<T> doubleWithLeftChild (AvlNode<T> node){
-		node.leftChild = rotateWithRightChild (node.leftChild);
+	private AvlNode<T> rotateWithRightThenLeft (AvlNode<T> node){
+		node.leftChild = rotateWithRight (node.leftChild);
 		return rotateWithLeftChild (node);
 	}
-	private AvlNode<T> rotateWithRightChild (AvlNode<T> father){
+	private AvlNode<T> rotateWithRight (AvlNode<T> father){
 		AvlNode<T> rChild = father.rightChild;
 
 		father.rightChild = rChild.leftChild;
@@ -159,9 +149,9 @@ public class AvlTree<T extends Comparable<? super T>> {
 
 		return (rChild);
 	}
-	private AvlNode<T> doubleWithRightChild (AvlNode<T> node){
+	private AvlNode<T> rotateWithLeftThenRight (AvlNode<T> node){
 		node.rightChild = rotateWithLeftChild (node.rightChild);
-		return rotateWithRightChild (node);
+		return rotateWithRight (node);
 	}
 	public String infixNotation(){
 		StringBuilder str = new StringBuilder();
@@ -171,8 +161,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 	private void infixNotation(AvlNode<T> node, StringBuilder str, String seperator){
 		if (node != null){
 			infixNotation (node.leftChild, str, seperator);
-			str.append(node.value.toString());
-			str.append(seperator);
+			str.append(node.value.toString() + seperator);
 			infixNotation (node.rightChild, str, seperator);
 		}    
 	}
@@ -181,29 +170,22 @@ public class AvlTree<T extends Comparable<? super T>> {
 		prefixNotation (root, str, " ");
 		return str.toString();
 	}
-	private void prefixNotation (AvlNode<T> t, StringBuilder str, String sep){
+	private void prefixNotation (AvlNode<T> t, StringBuilder str, String seperator){
 		if (t != null){
-			str.append(t.value.toString());
-			str.append(sep);
-			prefixNotation (t.leftChild, str, sep);
-			prefixNotation (t.rightChild, str, sep);
+			str.append(t.value.toString() + seperator);
+			prefixNotation (t.leftChild, str, seperator);
+			prefixNotation (t.rightChild, str, seperator);
 		}
-	}
-	public void makeEmpty(){
-		root = null;
-	}
-	public boolean isEmpty(){
-		return (root == null);
 	}
 	public T minValue( )
 	{
-		if( isEmpty( ) ) return null;
+		if( root == null ) return null;
 
 		return minValue( root ).value;
 	}
 	public T maxValue( )
 	{
-		if( isEmpty( ) ) return null;
+		if( root == null ) return null;
 		return maxValue( root ).value;
 	}
 	private AvlNode<T> minValue(AvlNode<T> node)
@@ -320,27 +302,27 @@ public class AvlTree<T extends Comparable<? super T>> {
 				z.value = minValue(z.rightChild).value;
 				z.rightChild = remove(z.value, z.rightChild);
 			}
-			
+
 		}
-		
+
 		if (z == null)
 			return null;
-		
+
 		z.height = Math.max(getNodeHeight(z.leftChild), getNodeHeight(z.rightChild)) + 1;
 		if (getBalance(z) > 1)
 		{
 			if (getBalance(z.leftChild) >= 0)
 				return rotateWithLeftChild(z); // left left case
 			else // if (getBalance(z.leftChild) < 0)
-				return doubleWithLeftChild(z); // left right case
+				return rotateWithRightThenLeft(z); // left right case
 		}
 
 		else if(getBalance(z) < -1)
 		{
 			if (getBalance(z.rightChild) <= 0)
-				return rotateWithRightChild(z); // right right case
+				return rotateWithRight(z); // right right case
 			else // if (getBalance(z.rightChild) > 0)
-				return doubleWithRightChild(z); // right left case
+				return rotateWithLeftThenRight(z); // right left case
 		}
 
 
@@ -348,65 +330,21 @@ public class AvlTree<T extends Comparable<? super T>> {
 
 	}
 	public boolean contains(T x){
-		return contains(x, root); 
+		return hasNode(x, root); 
 	}
-	private boolean contains(T node, AvlNode<T> from) {
+	private boolean hasNode(T node, AvlNode<T> from) {
 		if (from == null){
 			return false; // The node was not found
 
 		} else if (node.compareTo(from.value) < 0){
-			return contains(node, from.leftChild);
+			return hasNode(node, from.leftChild);
 		} else if (node.compareTo(from.value) > 0){
-			return contains(node, from.rightChild); 
+			return hasNode(node, from.rightChild); 
 		}
 
 		return true;
 	}
-	public boolean checkBalance(AvlTree.AvlNode<Integer> current) {
 
-		boolean balancedRight = true, balancedLeft = true;
-		int leftHeight = 0, rightHeight = 0;
-
-		if (current.rightChild != null) {
-			balancedRight = checkBalance(current.rightChild);
-			rightHeight = getDepth(current.rightChild);
-		}
-
-		if (current.leftChild != null) {
-			balancedLeft = checkBalance(current.leftChild);
-			leftHeight = getDepth(current.leftChild);
-		}
-
-		return balancedLeft && balancedRight && Math.abs(leftHeight - rightHeight) < 2;
-	}
-
-	public int getDepth(AvlTree.AvlNode<Integer> n) {
-		int leftHeight = 0, rightHeight = 0;
-
-		if (n.rightChild != null)
-			rightHeight = getDepth(n.rightChild);
-		if (n.leftChild != null)
-			leftHeight = getDepth(n.leftChild);
-
-		return Math.max(rightHeight, leftHeight) + 1;
-	}
-
-	public boolean checkOrdering(AvlTree.AvlNode<Integer> current) {
-		if(current.leftChild != null) {
-			if(current.leftChild.value.compareTo(current.value) > 0)
-				return false;
-			else
-				return checkOrdering(current.leftChild);
-		} else  if(current.rightChild != null) {
-			if(current.rightChild.value.compareTo(current.value) < 0)
-				return false;
-			else
-				return checkOrdering(current.rightChild);
-		} else if(current.leftChild == null && current.rightChild == null)
-			return true;
-
-		return true;
-	}
 	public boolean search(T x)
 	{
 		if (!contains(x))
@@ -441,8 +379,8 @@ public class AvlTree<T extends Comparable<? super T>> {
 		AvlTree<Integer> t = new AvlTree<Integer>();
 
 		t.insert (new Integer(2));
-		t.insert (new Integer(1));
 		t.insert (new Integer(4));
+		t.insert (new Integer(1));
 		t.insert (new Integer(5));
 		t.insert (new Integer(9));
 		t.insert (new Integer(3));
@@ -463,6 +401,13 @@ public class AvlTree<T extends Comparable<? super T>> {
 		System.out.println ("Prefix Traversal after search(5):");
 		System.out.println(t.prefixNotation());
 
+		t.remove(new Integer(6));
+		
+		System.out.println ("Infix Traversal after remove(6):");
+		System.out.println(t.infixNotation());
+
+		System.out.println ("Prefix Traversal after remove(6):");
+		System.out.println(t.prefixNotation());
 
 	}
 }
