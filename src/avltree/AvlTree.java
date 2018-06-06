@@ -213,6 +213,7 @@ public class AvlTree<T extends Comparable<? super T>> {
 	{
 		if (node == null)
 			return 0;
+		numberOfNodes--;
 		return getNodeHeight(node.leftChild) - getNodeHeight(node.rightChild);
 	}
 	private AvlNode<T> remove(T w, AvlNode<T> z) {
@@ -295,7 +296,6 @@ public class AvlTree<T extends Comparable<? super T>> {
 			// delete node
 			if (z.rightChild == null || z.leftChild == null) {
 				z = z.rightChild == null ? z.leftChild : z.rightChild;
-				numberOfNodes--;
 			}
 			else
 			{
